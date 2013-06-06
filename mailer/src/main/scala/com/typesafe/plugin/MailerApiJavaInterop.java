@@ -1,5 +1,8 @@
 package com.typesafe.plugin;
 
+import scala.Option;
+import java.io.File;
+
 public interface MailerApiJavaInterop {
 
   /**
@@ -32,4 +35,12 @@ public interface MailerApiJavaInterop {
    */
   public  MailerAPI setRecipient(String... recipients); 
   
+  /**
+   * Add an attachment to the mail
+   * 
+   * @param file
+   *            File to add
+   */
+  public MailerAPI addAttachment(File file, Option<String> name);
+
 }

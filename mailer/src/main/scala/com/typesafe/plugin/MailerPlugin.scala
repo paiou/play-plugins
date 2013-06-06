@@ -1,15 +1,11 @@
 package com.typesafe.plugin
 
 import org.apache.commons.mail._
-
-import java.util.concurrent.Future
-import java.lang.reflect._
 import javax.mail.internet.InternetAddress
-
-import scala.collection.JavaConversions._
+import java.io.File
+import scala.io.Source
 
 import play.api._
-import play.api.Configuration._
 
 trait MailerAPI extends MailerApiJavaInterop {
 
@@ -45,9 +41,15 @@ trait MailerAPI extends MailerApiJavaInterop {
    */
   def addHeader(key: String, value: String): MailerAPI
 
+  /**
+   * Add an attachment to the mail
+   * @param file File to add
+   * @param name Name of the file (default: file.getName)
+   */
+  def addAttachment(file: File, name: Option[String] = None): MailerAPI
 
-   /**
-   * Sends a text email based on the provided data. 
+  /**
+   * Sends a text email based on the provided data.
    *
    * @param bodyText : pass a string or use a Play! text template to generate the template
    */
@@ -80,6 +82,12 @@ trait MailerBuilder extends MailerAPI {
   protected val context = new ThreadLocal[collection.mutable.Map[String,List[String]]] {
     protected override def initialValue(): collection.mutable.Map[String,List[String]] = {
       collection.mutable.Map[String,List[String]]()
+    }
+  }
+
+  protected val contextAttachment = new ThreadLocal[collection.mutable.Buffer[(String, File)]] {
+    protected override def initialValue(): collection.mutable.Buffer[(String, File)] = {
+      collection.mutable.Buffer[(String, File)]()
     }
   }
 
@@ -187,7 +195,18 @@ trait MailerBuilder extends MailerAPI {
   }
 
   /**
-   * Sends a text email based on the provided data. 
+   * Add an attachment to this message
+   *
+   * @param file File to add
+   * @param name Name of the file (default: file.getName)
+   */
+  def addAttachment(file: File, name: Option[String] = None): MailerAPI = {
+    contextAttachment.get += ((name.getOrElse(file.getName), file))
+    this
+  }
+
+  /**
+   * Sends a text email based on the provided data.
    *
    * @param bodyText : pass a string or use a Play! text template to generate the template
    *  like view.Mails.templateText(tags).
@@ -243,10 +262,27 @@ class CommonsMailer(smtpHost: String,smtpPort: Int,smtpSsl: Boolean, smtpTls: Bo
     email.setSmtpPort(smtpPort)
     email.setSSLOnConnect(smtpSsl)
     email.setStartTLSEnabled(smtpTls)
-    for(u <- smtpUser; p <- smtpPass) yield email.setAuthenticator(new DefaultAuthenticator(u, p))
+    for (u <- smtpUser; p <- smtpPass) yield email.setAuthenticator(new DefaultAuthenticator(u, p))
+
+    contextAttachment.get().foreach {
+      case (name, file) => email.attach(createAttachment(name, file))
+    }
+
     email.setDebug(false)
     email.send
     context.get.clear()
+    contextAttachment.get.clear()
+  }
+
+  /**
+   * Create and return a Multipart Attachment
+   */
+  def createAttachment(name: String, file: File): EmailAttachment = {
+    val attachment = new EmailAttachment()
+    attachment.setPath(file.getAbsolutePath)
+    attachment.setDisposition(EmailAttachment.ATTACHMENT)
+    attachment.setName(name)
+    attachment
   }
 
   /**
@@ -256,7 +292,6 @@ class CommonsMailer(smtpHost: String,smtpPort: Int,smtpSsl: Boolean, smtpTls: Bo
    * @param setter
    */
   private def setAddress(emailAddress: String)(setter: (String, String) => Unit) = {
-
     if (emailAddress != null) {
       try {
         val iAddress = new InternetAddress(emailAddress);
@@ -313,7 +348,16 @@ case object MockMailer extends MailerBuilder {
     if (bodyHtml != null && bodyHtml != "") {
       Logger.info("HTML: " + bodyHtml)
     }
+    contextAttachment.get().foreach {
+      case (name, file) => {
+        Logger.info("attachement: " + name)
+        val content = Source.fromFile(file).toList.mkString
+        Logger.info(content)
+        Logger.info("---")
+      }
+    }
     context.get.clear()
+    contextAttachment.get.clear()
   }
 
 }
