@@ -12,4 +12,8 @@ workspace/
 framework/sbt/boot
 .history
 .idea
+.cache
+.classpath
+.project
+.settings/
 RUNNING_PID
