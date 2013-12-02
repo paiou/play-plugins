@@ -24,7 +24,7 @@ object MinimalBuild extends Build {
     javacOptions ++= Seq("-source","1.6","-target","1.6", "-encoding", "UTF-8"),
     javacOptions += "-Xlint:unchecked",
     libraryDependencies += "com.typesafe.play" %% "play" % playVersion % "provided",
-    libraryDependencies += "org.apache.commons" % "commons-email" % "1.2",
+    libraryDependencies += "org.apache.commons" % "commons-email" % "1.3",
     libraryDependencies += "com.typesafe" %% "play-plugins-util" % buildVersion
   )
 }
