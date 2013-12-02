@@ -25,6 +25,7 @@ object MinimalBuild extends Build {
     javacOptions += "-Xlint:unchecked",
     libraryDependencies += "com.typesafe.play" %% "play" % playVersion % "provided",
     libraryDependencies += "org.apache.commons" % "commons-email" % "1.3",
-    libraryDependencies += "com.typesafe" %% "play-plugins-util" % buildVersion
+    libraryDependencies += "com.typesafe" %% "play-plugins-util" % buildVersion,
+    libraryDependencies += "org.scala-lang.modules" %% "scala-async" % "0.9.0-M2"
   )
 }
